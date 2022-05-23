@@ -1,7 +1,6 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import keyboard
 import time
 
 # 손 2개 인식
@@ -35,20 +34,18 @@ label = labelFile.astype( np.float32)
 knn = cv2.ml.KNearest_create()
 knn.train(angle,cv2.ml.ROW_SAMPLE,label)
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture('ml2.mp4')
 
 startTime = time.time()
 prev_index = 0
 sentence = ''
 recognizeDelay = 1
-
-while cap.isOpened():
+length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+print(length)
+while length:
     ret, img = cap.read()
-    if not ret:
-        continue
     imgRGB = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
     result = hands.process(imgRGB)
-
     if result.multi_hand_landmarks is not None:
         for res in result.multi_hand_landmarks:
             joint = np.zeros((21,3))
@@ -65,14 +62,13 @@ while cap.isOpened():
             angle = np.arccos(np.einsum('nt,nt->n', comparev1, comparev2))
 
             angle = np.degrees(angle)
-            if keyboard. is_pressed('a'):
-                for num in angle:
-                    num = round(num, 6)
-                    f.write(str(num))
-                    f.write(',')
-                f.write("27.000000")
-                f.write('\n')
-                print("next")
+            for num in angle:
+                num = round(num, 6)
+                f.write(str(num))
+                f.write(',')
+            f.write("27.000000") #라벨을 가변 필드로 바꿔야 함
+            f.write('\n')
+            print("next")
             data = np.array([angle],dtype=np.float32)
             ret, results, neighbours, dist = knn.findNearest(data,3)
             index = int(results[0][0])
@@ -90,7 +86,7 @@ while cap.isOpened():
                             sentence += gesture[index]
                         startTime = time.time()
 
-                cv2.putText(img, gesture[index]. upper(),(int(res. Landmark[0].x * img.shape[1] - 10),
+                cv2.putText(img, gesture[index]. upper(),(int(res. landmark[0].x * img.shape[1] - 10),
                             int(res.landmark[0].y * img.shape[0] + 40)),cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255),3)
 
             mp_drawing.draw_landmarks(img,res,mp_hands.HAND_CONNECTIONS)
@@ -98,8 +94,7 @@ while cap.isOpened():
 
     cv2.imshow('HandTracking', img)
     cv2.waitKey(1)
-    if keyboard. is_pressed('b'):
-        break
+
 
 f.close();
 
