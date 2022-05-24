@@ -7,13 +7,17 @@ import json
 # 손 2개 인식
 max_num_hands = 2
 
-# 총 27개의 제스처가 저장되어있는 상태 & 총 11개의 제스처를 인식할 수 있는 데이터 있음
+# 제스처 수정 필요
+# gesture = { 1:'left',2:'left',3:'right',4:'right',5:'여기',6:'여기',7:'저기',
+#             8:'저기',9:'운전 천천히',10:'운전 천천히',11:'운전 빨리', 12:'빨리 가주세요', 13:'시간이 급해요', 14:'시간이 급해요',
+#             15:'급해요', 16:'급해요?',17:'약속에 늦었어요',18:'약속에 늦었어요',19:'나',20:'나?', 21:'당신',
+#             22:'당신',23:'그 남자 맞다',24:'그 남자 맞다',25:'잘못 말하다',26:'잘못 말해주다',27:'위험',28:'위험?',29:'항상',30:'항상?'
+#            }
 gesture = { 0:'a',1:'b',2:'c',3:'0',4:'e',5:'f',6:'g',7:'h',
             8:'i',9:'3',10:'k',11:'1', 12:'m', 13:'n', 14:'0',
             15:'p', 16:'q',17:'r',18:'5',19:'t',20:'u', 21:'v',
-            22:'w',23:'x',24:'y',25:'2',26: 'spacing',27:'clear'
+            22:'w',23:'x',24:'y',25:'2',26: '26',27:'27',28:'28',29:'29',30:'30'
            }
-
 # MediaPipe hands model
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
@@ -22,10 +26,11 @@ hands = mp_hands.Hands(
     min_detection_confidence = 0.5,
     min_tracking_confidence = 0.5)
 
-f = open('test.txt', 'w')
+f = open('tmp2.txt', 'w')
+f3 = open('tmp3.txt', 'w')
 
 # 손가락 각도가 저장된 제스처 파일
-file = np.genfromtxt('dataSet.txt',delimiter=',')
+file = np.genfromtxt('tmp.txt',delimiter=',')
 # angle, label을 데이터로 모으기
 angleFile = file[:,:-1]
 labelFile = file[:,-1]
@@ -35,30 +40,33 @@ label = labelFile.astype( np.float32)
 knn = cv2.ml.KNearest_create()
 knn.train(angle,cv2.ml.ROW_SAMPLE,label)
 
-for i in range(1, 30):
+for i in range(1, 3):
     # cap = cv2.VideoCapture('videos/ml2.mp4')
     cap = cv2.VideoCapture('data/Front/NIA_SL_SEN00%02d_REAL01_F.mp4'%i)
-    file = open('morpheme/Front/NIA_SL_SEN00%02d_REAL01_F_morpheme.json'%i, 'r', encoding='UTF8')
-    jsonStr = json.load(file)
+    mor = open('morpheme/Front/NIA_SL_SEN00%02d_REAL01_F_morpheme.json'%i, 'r', encoding='UTF8')
+    jsonStr = json.load(mor)
     start = jsonStr["data"][0]['start']
-    end = jsonStr["data"][0]['end']
-    #인접한 프레임 계산
+    if len(jsonStr["data"]) > 1:
+        end = jsonStr["data"][1]['end']
+    else:
+        end = jsonStr["data"][0]['end']
     print(start, end)
     startTime = time.time()
     prev_index = 0
     sentence = ''
     recognizeDelay = 1
     length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    print(length)
+    print(i)
     for tmp in range(0, length):
     # while length:
         ret, img = cap.read()
         if(img is None):
-            break        
-        if(tmp < start*30 - 1):
-            continue
-        elif(tmp > end*30 +1):
-            continue
+            print('passed')
+            break
+        # if(tmp < start*30 - 1):
+        #     continue
+        # elif(tmp > end*30 +1):
+        #     continue
         else:
             imgRGB = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
             result = hands.process(imgRGB)
@@ -82,34 +90,29 @@ for i in range(1, 30):
                         num = round(num, 6)
                         f.write(str(num))
                         f.write(',')
-                    f.write("27.000000") #라벨을 가변 필드로 바꿔야 함
+                    f.write("%02d.000000"%i) #라벨을 가변 필드로 바꿔야 함
                     f.write('\n')
                     data = np.array([angle],dtype=np.float32)
                     ret, results, neighbours, dist = knn.findNearest(data,3)
                     index = int(results[0][0])
+                    print(index)
                     if index in gesture.keys():
                         if index != prev_index:
                             startTime = time.time()
                             prev_index = index
                         else:
-                            if time.time() - startTime > recognizeDelay:
-                                if index == 26:
-                                    sentence += ''
-                                elif index == 27:
-                                    sentence = ''
-                                else:
-                                    sentence += gesture[index]
+                            if time.time() - startTime >= recognizeDelay: 
+                                sentence = gesture[index]
                                 startTime = time.time()
 
                         cv2.putText(img, gesture[index]. upper(),(int(res. landmark[0].x * img.shape[1] - 10),
                                     int(res.landmark[0].y * img.shape[0] + 40)),cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255),3)
-
                     mp_drawing.draw_landmarks(img,res,mp_hands.HAND_CONNECTIONS)
             cv2.putText(img, sentence, (20,440),cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255),3)
 
             cv2.imshow('HandTracking', img)
             cv2.waitKey(1)
-
-
-f.close();
-
+    f3.write(str(sentence))
+    f3.write('\n')
+f.close()
+f3.close()
