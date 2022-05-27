@@ -13,10 +13,10 @@ max_num_hands = 2
 #             15:'급해요', 16:'급해요?',17:'약속에 늦었어요',18:'약속에 늦었어요',19:'나',20:'나?', 21:'당신',
 #             22:'당신',23:'그 남자 맞다',24:'그 남자 맞다',25:'잘못 말하다',26:'잘못 말해주다',27:'위험',28:'위험?',29:'항상',30:'항상?'
 #            }
-gesture = { 0:'a',1:'b',2:'c',3:'0',4:'e',5:'f',6:'g',7:'h',
-            8:'i',9:'3',10:'k',11:'1', 12:'m', 13:'n', 14:'0',
-            15:'p', 16:'q',17:'r',18:'5',19:'t',20:'u', 21:'v',
-            22:'w',23:'x',24:'y',25:'2',26: '26',27:'27',28:'28',29:'29',30:'30'
+gesture = { 1:'1',2:'2',3:'3',4:'4',5:'5',6:'6',7:'7',
+            8:'8',9:'9',10:'10',11:'11', 12:'12', 13:'13', 14:'14',
+            15:'15', 16:'16',17:'17',18:'18',19:'19',20:'20', 21:'21',
+            22:'22',23:'23',24:'24',25:'25',26:'26',27:'27',28:'28',29:'29',30:'30'
            }
 # MediaPipe hands model
 mp_hands = mp.solutions.hands
@@ -26,21 +26,24 @@ hands = mp_hands.Hands(
     min_detection_confidence = 0.5,
     min_tracking_confidence = 0.5)
 
-f = open('tmp2.txt', 'w')
-f3 = open('tmp3.txt', 'w')
+f = open('tmp6.txt', 'w')
+f3 = open('tmp4.txt', 'w')
 
 # 손가락 각도가 저장된 제스처 파일
-file = np.genfromtxt('tmp.txt',delimiter=',')
+file = np.genfromtxt('tmp5.txt',delimiter=',')
+print(file[0])
 # angle, label을 데이터로 모으기
 angleFile = file[:,:-1]
 labelFile = file[:,-1]
 angle = angleFile.astype(np.float32)
-label = labelFile.astype( np.float32)
+label = labelFile.astype(np.float32)
+print(angle[0])
+print(label)
 # knn 모델에 k-Nearest로 데이터 학습
 knn = cv2.ml.KNearest_create()
 knn.train(angle,cv2.ml.ROW_SAMPLE,label)
 
-for i in range(1, 3):
+for i in range(1, 1):
     # cap = cv2.VideoCapture('videos/ml2.mp4')
     cap = cv2.VideoCapture('data/Front/NIA_SL_SEN00%02d_REAL01_F.mp4'%i)
     mor = open('morpheme/Front/NIA_SL_SEN00%02d_REAL01_F_morpheme.json'%i, 'r', encoding='UTF8')
@@ -63,9 +66,9 @@ for i in range(1, 3):
         if(img is None):
             print('passed')
             break
-        # if(tmp < start*30 - 1):
+        # if(tmp < start*30 - 10):
         #     continue
-        # elif(tmp > end*30 +1):
+        # elif(tmp > end*30 + 10):
         #     continue
         else:
             imgRGB = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
@@ -93,17 +96,22 @@ for i in range(1, 3):
                     f.write("%02d.000000"%i) #라벨을 가변 필드로 바꿔야 함
                     f.write('\n')
                     data = np.array([angle],dtype=np.float32)
+
+                    ### sentence를 저장(bbbbcbbbbdbb)
+                    ### sentence에 저장된 값 중 가장 많은 빈도로 나온 값을 출력
                     ret, results, neighbours, dist = knn.findNearest(data,3)
                     index = int(results[0][0])
-                    print(index)
                     if index in gesture.keys():
                         if index != prev_index:
                             startTime = time.time()
                             prev_index = index
                         else:
-                            if time.time() - startTime >= recognizeDelay: 
+                            if time.time() - startTime > 1: 
+                                print('called')
                                 sentence = gesture[index]
                                 startTime = time.time()
+                    #######################################################
+                    #######################################################
 
                         cv2.putText(img, gesture[index]. upper(),(int(res. landmark[0].x * img.shape[1] - 10),
                                     int(res.landmark[0].y * img.shape[0] + 40)),cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255),3)
