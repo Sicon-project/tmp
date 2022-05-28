@@ -43,7 +43,7 @@ print(label)
 knn = cv2.ml.KNearest_create()
 knn.train(angle,cv2.ml.ROW_SAMPLE,label)
 
-for i in range(1, 1):
+for i in range(1, 2):
     # cap = cv2.VideoCapture('videos/ml2.mp4')
     cap = cv2.VideoCapture('data/Front/NIA_SL_SEN00%02d_REAL01_F.mp4'%i)
     mor = open('morpheme/Front/NIA_SL_SEN00%02d_REAL01_F_morpheme.json'%i, 'r', encoding='UTF8')
@@ -99,16 +99,21 @@ for i in range(1, 1):
 
                     ### sentence를 저장(bbbbcbbbbdbb)
                     ### sentence에 저장된 값 중 가장 많은 빈도로 나온 값을 출력
-                    ret, results, neighbours, dist = knn.findNearest(data,3)
+                    ret, results, neighbours, dist = knn.findNearest(data,3) 
                     index = int(results[0][0])
                     if index in gesture.keys():
+                        print(0)
                         if index != prev_index:
+                            print('1-1')
                             startTime = time.time()
                             prev_index = index
                         else:
-                            if time.time() - startTime > 1: 
-                                print('called')
-                                sentence = gesture[index]
+                            print('1-2')
+                            if time.time() - startTime > 1: #현재시각 - 시작시간이므로, 실행시간>1일 때
+                                print('1-2-1')
+                                print((len(sentence)-len(gesture[index])+1))
+                                if sentence[(len(sentence)-len(gesture[index])+1):len(sentence)] != gesture[index]:
+                                    sentence += gesture[index]
                                 startTime = time.time()
                     #######################################################
                     #######################################################
@@ -116,11 +121,13 @@ for i in range(1, 1):
                         cv2.putText(img, gesture[index]. upper(),(int(res. landmark[0].x * img.shape[1] - 10),
                                     int(res.landmark[0].y * img.shape[0] + 40)),cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255),3)
                     mp_drawing.draw_landmarks(img,res,mp_hands.HAND_CONNECTIONS)
+                    time.sleep(0.01)
             cv2.putText(img, sentence, (20,440),cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255),3)
 
             cv2.imshow('HandTracking', img)
             cv2.waitKey(1)
     f3.write(str(sentence))
     f3.write('\n')
+
 f.close()
 f3.close()
