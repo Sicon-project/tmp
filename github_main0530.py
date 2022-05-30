@@ -92,9 +92,11 @@ while length:
                 if index != prev_index:
                     startTime = time.time()
                     prev_index = index
-                else:
-                  if time.time() - startTime > 1: #현재시각 - 시작시간이므로, 실행시간>1일 
+               else:
+                  if (time.time() - startTime > 1) and (tmp_array[-1] != gesture[index]):
                     tmp_array.append(gesture[index])
+                    startTime = time.time()
+                  else if (time.time() - startTime > 1):
                     startTime = time.time()
 
     if not not tmp_array:
